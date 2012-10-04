@@ -8,11 +8,11 @@ import Data.ByteString (ByteString)
 import Control.Monad.Identity
 import Text.Parsec.Expr
 
-data Endian = Big | Little
+data Endian = Big | Little deriving Show
 type Var = String
 data Type = Reg Int
           | TMem Type
-          | Arr Type Type
+          | Arr Type Type deriving Show
 data BinOp = Plus
            | Minus
            | Times
@@ -31,8 +31,8 @@ data BinOp = Plus
            | Lt
            | LtE
            | SLt
-           | SLtE
-data UnOp = Neg | Not
+           | SLtE deriving Show
+data UnOp = Neg | Not deriving Show
 data Exp = 
     Load { bMem    :: Exp
          , bIdx    :: Exp
@@ -80,8 +80,8 @@ data Exp =
   | Cast { bCast :: Cast
          , bType :: Type
          , bExp  :: Exp
-         }
-data Cast = Pad | Extend | High | Low
+         } deriving Show
+data Cast = Pad | Extend | High | Low deriving Show
 type Attrs = [Attr]
 data Attr = Asm String
           | Address Integer
@@ -90,7 +90,7 @@ data Attr = Asm String
           | Context
           | ThreadId Int
           | InitRO
-          | Synthetic
+          | Synthetic deriving Show
 
 data Stmt = 
     Move { sDest  :: Var
@@ -116,9 +116,9 @@ data Stmt =
            }
   | Special { sMsg :: String
             , sAttrs :: Attrs
-            }
+            } deriving Show
 data Label = StrLab String
-           | AddrLab Integer
+           | AddrLab Integer deriving Show
 
 astStmtParser :: Parser Stmt
 astStmtParser = jmpP <|> cjmpP <|> haltP <|> assertP <|> specialP <|> labelP <|> movP
@@ -151,6 +151,11 @@ natural       = Tok.natural       bilTokens
 brackets      = Tok.brackets      bilTokens
 comma         = Tok.comma         bilTokens
 whiteSpace    = Tok.whiteSpace    bilTokens
+
+astProgParser = do
+  v <- many astStmtParser
+  eof
+  return v
 
 jmpP = do
   reserved "jmp"
