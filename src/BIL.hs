@@ -85,12 +85,8 @@ data Cast = Pad | Extend | High | Low deriving Show
 type Attrs = [Attr]
 data Attr = Asm String
           | Address Integer
-          | Liveout
-          | StrAttr String
-          | Context
-          | ThreadId Int
-          | InitRO
-          | Synthetic deriving Show
+          | Set String
+          | StrAttr String deriving Show
 
 data Stmt = 
     Move { sDest  :: Var
@@ -380,18 +376,17 @@ attrsParser = many attrP
 
 attrP = asmP <|> addrP <|> liveoutP <|> strAttrP
 
-asmP = try $ do
+asmP = do
   reserved "@asm"
   fmap Asm stringLiteral
-addrP = try $ do
+addrP = do
   reserved "@address"
   fmap Address natural
-liveoutP = try $ do
-  string "@set \"liveout\""
-  return Liveout
-strAttrP = try $ do
-  string "@str"
-  whiteSpace
+liveoutP = do
+  reserved "@set"
+  fmap Set stringLiteral
+strAttrP = do
+  reserved "@str"
   fmap StrAttr stringLiteral
 
 -- TODO write these parsers. We don't really use these attrs atm
