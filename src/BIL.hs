@@ -9,7 +9,7 @@ import Control.Monad.Identity
 import Text.Parsec.Expr
 
 data Endian = Big | Little deriving Show
-type Var = String
+data Var = V String (Maybe Type) deriving Show
 data Type = Reg Int
           | TMem Type
           | Arr Type Type deriving Show
@@ -132,8 +132,8 @@ bilDef = LanguageDef
     nestedComments = True,
     identStart = letter <|> char '_',
     identLetter = alphaNum <|> char '_',
-    opStart = oneOf "=+-*/%&^|<>!~",
-    opLetter = oneOf "=&|<>",
+    opStart = oneOf ":=+-*/%&^|<>!~",
+    opLetter = oneOf ":=&|<>",
     reservedNames = ["label", "special", "assert", "halt", "cjmp", "jmp"],
     reservedOpNames = ["="],
     caseSensitive = True}
@@ -187,7 +187,7 @@ specialP = do
 labelP = labelPLabel <|> labelPAddr
 labelPLabel = do
   reserved "label"
-  l  <- stringLiteral
+  l  <- identifier --TODO this is not specified how to do it right :(
   as <- attrsParser
   return $ SLabel (StrLab l) as
 labelPAddr = do
@@ -196,11 +196,17 @@ labelPAddr = do
   as <- attrsParser
   return $ SLabel (AddrLab n) as
 movP = do
-  i  <- identifier
+  i  <- var
   reservedOp "="
   e  <- astExprParser
   as <- attrsParser
   return $ Move i e as
+
+var = do
+  i  <- identifier
+  (do reservedOp ":"
+      ty <- typeP
+      return $ V i (Just ty)) <|> (return $ V i Nothing)
 
 astExprParser = expr
 expr = buildExpressionParser opTable term
@@ -234,8 +240,6 @@ term = do
 bTerm = do
   parens expr
   <|>
-  fmap Var identifier
-  <|>
   bool
   <|>
   (do n <- integer
@@ -252,6 +256,8 @@ bTerm = do
   castP
   <|>
   unknownP
+  <|>
+  fmap Var var
 
 unknownP = do
   reserved "unknown"
