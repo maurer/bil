@@ -165,7 +165,9 @@ jmpP = do
 cjmpP = do
   reserved "cjmp"
   i  <- astExprParser
+  comma
   t  <- astExprParser
+  comma
   e  <- astExprParser
   as <- attrsParser
   return $ CJmp i t e as
@@ -317,7 +319,10 @@ prefix :: String -> UnOp -> Operator ByteString () Identity Exp
 prefix name k = Prefix $ do reservedOp name
                             return $ UnOp k
 
-opTable = [[binary "*"   Times   AssocLeft
+opTable = [[prefix "-"   Neg,
+            prefix "~"   Not
+           ]
+          ,[binary "*"   Times   AssocLeft
            ,binary "/"   Divide  AssocLeft
            ,binary "$/"  SDivide AssocLeft
            ,binary "%"   Mod     AssocLeft
@@ -335,15 +340,12 @@ opTable = [[binary "*"   Times   AssocLeft
            ,binary "$<=" SLtE    AssocLeft
            ,binary "<="  LtE     AssocLeft
            ]
-          ,[binary "="   Eq      AssocLeft
+          ,[binary "=="   Eq      AssocLeft
            ,binary "<>"  NEq     AssocLeft
            ]
           ,[binary "&"   And     AssocLeft]
           ,[binary "^"   Xor     AssocLeft]
           ,[binary "|"   Or      AssocLeft]
-          ,[prefix "-"   Neg
-           ,prefix "~"   Not
-           ]
           ]
 
 --TODO this parse is ambiguous, but since I assume we won't
@@ -378,16 +380,16 @@ attrsParser = many attrP
 
 attrP = asmP <|> addrP <|> liveoutP <|> strAttrP
 
-asmP = do
+asmP = try $ do
   reserved "@asm"
   fmap Asm stringLiteral
-addrP = do
+addrP = try $ do
   reserved "@address"
   fmap Address natural
-liveoutP = do
+liveoutP = try $ do
   string "@set \"liveout\""
   return Liveout
-strAttrP = do
+strAttrP = try $ do
   string "@str"
   whiteSpace
   fmap StrAttr stringLiteral
