@@ -9,7 +9,7 @@ import Control.Monad.Identity
 import Text.Parsec.Expr
 
 data Endian = Big | Little deriving Show
-data Var = V String (Maybe Type) deriving Show
+data Var = V {vName :: String, vTy :: (Maybe Type)} deriving Show
 data Type = Reg Int
           | TMem Type
           | Arr Type Type deriving Show
